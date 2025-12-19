@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NEXUS — AI Road Intelligence Platform</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+  :root{
+    --bg-0: #0b1220;
+    --bg-1: linear-gradient(135deg,#0f1724 0%, #0d1b2a 45%, #061026 100%);
+    --card-bg: rgba(255,255,255,0.03);
+    --glass-white: rgba(255,255,255,0.04);
+    --accent-1: #667eea;
+    --accent-2: #764ba2;
+    --muted: rgba(255,255,255,0.65);
+    --success: #34C759;
+    --warning: #FF9500;
+    --danger: #FF3B30;
+    --glass-border: rgba(255,255,255,0.06);
+    --radius: 14px;
+    --max-width: 1240px;
+  }
+  html,body{height:100%;margin:0;font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;background:var(--bg-1);color:#f5f7fa;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
+  a{color:inherit;text-decoration:none;}
+  .container{max-width:var(--max-width);margin:0 auto;padding:28px;}
+  header.app-header{position:sticky;top:0;z-index:60;background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-bottom:1px solid rgba(255,255,255,0.03);backdrop-filter:blur(6px);}
+  .header-inner{display:flex;align-items:center;gap:16px;max-width:var(--max-width);margin:0 auto;padding:14px 28px;}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .logo{width:52px;height:52px;border-radius:10px;background:linear-gradient(135deg,var(--accent-1),var(--accent-2));display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,0.5);font-weight:800;color:white;font-size:18px;}
+  .brand h1{margin:0;font-size:18px;letter-spacing:0.3px;font-weight:700;}
+  .brand p{margin:0;font-size:12px;color:var(--muted);}
+  nav.top-nav{margin-left:auto;display:flex;gap:12px;align-items:center;}
+  nav.top-nav .nav-btn{color:var(--muted);padding:8px 12px;border-radius:10px;font-size:14px;background:transparent;border:1px solid rgba(255,255,255,0.02);cursor:pointer;}
+  nav.top-nav .nav-btn.active{background:linear-gradient(90deg,var(--accent-1),var(--accent-2));color:white;box-shadow:0 6px 20px rgba(102,126,234,0.14);}
+  .hero{margin:28px auto 18px;padding:36px;border-radius:20px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.03);display:flex;gap:28px;align-items:center;overflow:hidden;}
+  .hero-left{flex:1;}
+  .hero-right{width:520px;min-width:360px;max-width:520px;}
+  .hero h2{font-size:34px;margin:0 0 8px;line-height:1.02;}
+  .hero p{margin:0 0 16px;color:var(--muted);font-size:15px;max-width:56ch;}
+  .cta-row{display:flex;gap:12px;margin-top:12px;}
+  .btn{padding:12px 18px;border-radius:12px;font-weight:600;border:none;cursor:pointer;}
+  .btn.primary{background:linear-gradient(90deg,var(--accent-1),var(--accent-2));color:white;box-shadow:0 8px 30px rgba(118,75,162,0.12);}
+  .btn.ghost{background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.04);}
+  .mini-dashboard{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:10px;border:1px solid rgba(255,255,255,0.03);}
+  .mini-dashboard .kpi{display:flex;gap:10px;align-items:center;margin:8px 0;}
+  .mini-dashboard .kpi .val{font-weight:700;font-size:18px;color:white;}
+  .mini-dashboard .kpi .lbl{color:var(--muted);font-size:12px;}
+  .page-grid{display:grid;grid-template-columns:1fr 360px;gap:20px;margin-top:20px;align-items:start;}
+  .card{background:var(--card-bg);border-radius:var(--radius);padding:18px;border:1px solid var(--glass-border);box-shadow:0 8px 40px rgba(2,6,23,0.45);}
+  .card .title{font-weight:700;color:#fff;margin-bottom:10px;font-size:16px;}
+  .small{font-size:13px;color:var(--muted);}
+  .metrics{display:flex;gap:12px;}
+  .metric{flex:1;padding:16px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.02);}
+  .metric .num{font-size:22px;font-weight:800;}
+  .metric .label{font-size:12px;color:var(--muted);margin-top:6px;}
+  #map{height:420px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.03);}
+  .right-section{display:flex;flex-direction:column;gap:12px;position:sticky;top:110px;}
+  .feed{display:flex;flex-direction:column;gap:10px;max-height:420px;overflow:auto;padding-right:6px;}
+  .feed-item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.02);}
+  .dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:8px;}
+  .dot.critical{background:var(--danger);}
+  .dot.warning{background:var(--warning);}
+  .dot.good{background:var(--success);}
+  .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;}
+  .chart{height:260px;border-radius:10px;padding:8px;}
+  .image-compare{display:flex;gap:10px;}
+  .image-compare img{width:100%;height:220px;object-fit:cover;border-radius:10px;}
+  .arch-diagram{background:linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.01));padding:18px;border-radius:12px;}
+  .report-row{display:flex;gap:12px;align-items:center;justify-content:space-between;}
+  footer.app-footer{margin-top:40px;padding:28px;border-top:1px solid rgba(255,255,255,0.03);color:var(--muted);}
+  footer .cols{display:flex;gap:20px;flex-wrap:wrap;justify-content:space-between;}
+  @media (max-width:980px){.page-grid{grid-template-columns:1fr}.hero-right{display:none}.right-section{position:relative;top:0}.top-nav{display:none}}
+  .muted{color:var(--muted);font-size:13px;}
+  .pill{padding:6px 10px;border-radius:999px;font-weight:600;font-size:12px;}
+  .status{display:flex;gap:8px;align-items:center;}
+  .small-muted{font-size:12px;color:var(--muted);}
+  </style>
+</head>
+<body>
+  <header class="app-header" role="banner">
+    <div class="header-inner container">
+      <div class="brand" aria-label="Nexus brand">
+        <div class="logo" aria-hidden="true">NX</div>
+        <div>
+          <h1>NEXUS</h1>
+          <p>AI Road Intelligence Platform — safer roads, smarter cities</p>
+        </div>
+      </div>
+      <nav class="top-nav" role="navigation" aria-label="Main">
+        <button class="nav-btn active" data-view="dashboard" onclick="navTo('dashboard')">Dashboard</button>
+        <button class="nav-btn" data-view="map" onclick="navTo('map')">Geospatial Map</button>
+        <button class="nav-btn" data-view="analytics" onclick="navTo('analytics')">Infrastructure Analytics</button>
+        <button class="nav-btn" data-view="reports" onclick="navTo('reports')">Reports</button>
+        <button class="nav-btn" data-view="architecture" onclick="navTo('architecture')">Architecture</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container" id="app">
+    <section class="hero card" aria-labelledby="hero-title">
+      <div class="hero-left">
+        <h2 id="hero-title">NEXUS — AI Road Intelligence</h2>
+        <p>Enterprise-grade solution for automated road anomaly detection, analysis and reporting. Built for municipalities, asset managers and judges who expect operational clarity.</p>
+        <div class="cta-row">
+          <button class="btn primary" onclick="navTo('dashboard')">View Dashboard</button>
+          <button class="btn ghost" onclick="navTo('map')">Explore Map</button>
+          <button class="btn ghost" onclick="downloadSampleReport()">Download Sample Report</button>
+        </div>
+        <div style="margin-top:18px;">
+          <div class="metrics" aria-hidden="true">
+            <div class="metric">
+              <div class="num" id="metric-roads">14</div>
+              <div class="label">Roads Monitored</div>
+            </div>
+            <div class="metric">
+              <div class="num" id="metric-detections">0</div>
+              <div class="label">Total Anomalies Detected</div>
+            </div>
+            <div class="metric">
+              <div class="num" id="metric-avgconf">95%</div>
+              <div class="label">Avg Model Accuracy</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="hero-right">
+        <div class="mini-dashboard card">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div><strong>Detection Feed</strong><div class="small-muted">Simulated real-time alerts</div></div>
+            <div><span class="pill" id="Status" style="background:linear-gradient(90deg,var(--accent-1),var(--accent-2)); color:white;">LIVE</span></div>
+          </div>
+          <div id="mini-feed" style="margin-top:12px;display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+      </div>
+    </section>
+    
+
+        <!-- Streamlit results -->
+    <section class="card" style="margin-top:20px;">
+      <div class="title">Live Detection Results (Streamlit)</div>
+      <iframe src="http://localhost:8501"
+              style="width:100%; height:800px; border:none; border-radius:12px; margin-top:12px;">
+      </iframe>
+    </section>
+
+    <section id="view-dashboard" class="page-grid" style="margin-bottom:28px;">
+      <div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div class="title">Neural Map — Detection Network</div>
+            <div class="small-muted">Interactive — filter and inspect</div>
+          </div>
+          <div id="map"></div>
+          <div style="display:flex;gap:12px;margin-top:12px;align-items:center;">
+            <div class="small-muted">Show:</div>
+            <label class="small-muted"><input type="checkbox" id="filter-critical" checked onchange="refreshMap()" /> Critical</label>
+            <label class="small-muted"><input type="checkbox" id="filter-warning" checked onchange="refreshMap()" /> Warning</label>
+            <label class="small-muted"><input type="checkbox" id="filter-good" checked onchange="refreshMap()" /> Good</label>
+            <div style="margin-left:auto;display:flex;gap:8px;">
+              <button class="btn ghost" onclick="generateSampleDetections(6)">Generate</button>
+              <button class="btn ghost" onclick="clearDetections()">Clear</button>
+              <button class="btn ghost" onclick="toggleAuto()">Toggle Auto</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px;">
+          <div class="title">Infrastructure Analytics</div>
+          <div class="small-muted">Concise charts for judges</div>
+          <div class="charts-grid" style="margin-top:12px;">
+            <div class="card chart">
+              <canvas id="chart-severity"></canvas>
+            </div>
+            <div class="card chart">
+              <canvas id="chart-types"></canvas>
+            </div>
+            <div class="card chart" style="grid-column:1/3;">
+              <canvas id="chart-trend" style="height:220px;"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px;">
+          <div class="title">Recent Detections</div>
+          <div class="small-muted">Latest events (most recent first)</div>
+          <div id="recent-list" style="margin-top:12px;display:flex;flex-direction:column;gap:8px;max-height:320px;overflow:auto;"></div>
+        </div>
+      </div>
+
+      <aside class="right-section">
+        <div class="card">
+          <div class="title">Key Metrics</div>
+          <div class="small-muted"></div>
+          <div style="margin-top:12px;display:grid;gap:10px;">
+            <div style="display:flex;justify-content:space-between;">
+              <div class="small-muted">Top Hotspot</div>
+              <div><strong id="ins-hotspot">MG Road</strong></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+              <div class="small-muted">Critical %</div>
+              <div><strong id="ins-critical">12%</strong></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+              <div class="small-muted">Avg Response Time</div>
+              <div><strong id="ins-response">2.4 days</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="title">Alerts</div>
+          <div class="small-muted">Auto-simulated stream</div>
+          <div class="feed" id="feed"></div>
+        </div>
+
+        <div class="card">
+          <div class="title">Downloadables</div>
+          <div class="small-muted">Reports & datasets</div>
+          <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px;">
+            <button class="btn primary" onclick="downloadCSV()">Download CSV</button>
+            <button class="btn ghost" onclick="downloadSampleReport()">Download Priority Report</button>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section id="view-map" style="display:none;">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div class="title">Full Map</div>
+          <div class="small-muted">Heatmap and clusters</div>
+        </div>
+        <div id="map-full" style="height:640px;margin-top:12px;border-radius:12px;overflow:hidden;"></div>
+        <div style="display:flex;gap:12px;margin-top:12px;">
+          <div class="small-muted">Heatmap opacity:</div>
+          <input type="range" id="heatOpacity" min="0" max="1" step="0.1" value="0.7" oninput="updateHeatOpacity(this.value)">
+          <div style="margin-left:auto;"><button class="btn ghost" onclick="navTo('dashboard')">Back to Dashboard</button></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-analytics" style="display:none;">
+      <div class="card">
+        <div class="title">Infrastructure Analytics</div>
+        <div class="small-muted">Pothole counts, compliance, density, trends</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
+          <div class="card">
+            <div class="title">Potholes per Road</div>
+            <div class="small-muted">Top roads with highest counts</div>
+            <canvas id="chart-potholes" style="height:260px;margin-top:12px;"></canvas>
+          </div>
+          <div class="card">
+            <div class="title">Lane Width Compliance</div>
+            <div class="small-muted">Compliant vs Non-compliant</div>
+            <canvas id="chart-compliance" style="height:260px;margin-top:12px;"></canvas>
+          </div>
+          <div class="card" style="grid-column:1/3;">
+            <div class="title">Encroachment Trends</div>
+            <div class="small-muted">Detections per hour (simulated)</div>
+            <canvas id="chart-encroach" style="height:260px;margin-top:12px;"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <section id="view-reports" style="display:none;">
+      <div class="card">
+        <div class="title">Actionable Reports</div>
+        <div class="small-muted">Generate maintenance and priority reports</div>
+        <div style="margin-top:12px;display:flex;gap:12px;align-items:center;">
+          <div style="flex:1;">
+            <label class="small-muted">Select roads</label>
+            <select id="report-roads" multiple style="width:100%;padding:8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.04);color:white;"></select>
+          </div>
+          <div style="width:220px;">
+            <label class="small-muted">Priority Threshold</label>
+            <select id="priority-threshold" style="width:100%;padding:8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.04);color:white;">
+              <option value="0.8">High (>= 80%)</option>
+              <option value="0.6" selected>Medium (>= 60%)</option>
+              <option value="0.4">Low (>= 40%)</option>
+            </select>
+          </div>
+          <div><button class="btn primary" onclick="generateReport()">Generate</button></div>
+        </div>
+        <div id="report-output" style="margin-top:12px;"></div>
+      </div>
+    </section>
+
+    <section id="view-architecture" style="display:none;">
+      <div class="card arch-diagram">
+        <div class="title">System Architecture</div>
+        <div class="small-muted">End-to-end pipeline</div>
+        <div style="margin-top:12px;">
+          <svg width="100%" height="260" viewBox="0 0 1200 260" preserveAspectRatio="xMidYMid meet">
+            <defs><linearGradient id="g1" x1="0" x2="1"><stop offset="0" stop-color="#667eea"/><stop offset="1" stop-color="#764ba2"/></linearGradient></defs>
+            <rect x="20" y="40" rx="12" ry="12" width="200" height="80" fill="#071226" stroke="rgba(255,255,255,0.03)"/>
+            <text x="120" y="65" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">Data Sources</text>
+            <text x="120" y="88" fill="#9aa7c4" font-size="12" text-anchor="middle">Cameras · Drones · Mobile</text>
+            <line x1="230" y1="80" x2="330" y2="80" stroke="url(#g1)" stroke-width="3" stroke-linecap="round" />
+            <rect x="330" y="30" rx="12" ry="12" width="260" height="100" fill="#071226" stroke="rgba(255,255,255,0.03)"/>
+            <text x="460" y="60" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">Detection Engine</text>
+            <text x="460" y="86" fill="#9aa7c4" font-size="12" text-anchor="middle">Model Inference · Heuristics</text>
+            <line x1="590" y1="80" x2="690" y2="80" stroke="url(#g1)" stroke-width="3" stroke-linecap="round" />
+            <rect x="690" y="20" rx="12" ry="12" width="220" height="120" fill="#071226" stroke="rgba(255,255,255,0.03)"/>
+            <text x="800" y="55" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">Analytics Layer</text>
+            <text x="800" y="82" fill="#9aa7c4" font-size="12" text-anchor="middle">Aggregation · Trend · Hotspots</text>
+            <line x1="820" y1="140" x2="820" y2="180" stroke="url(#g1)" stroke-width="3" stroke-linecap="round" />
+            <rect x="640" y="180" rx="12" ry="12" width="320" height="60" fill="#071226" stroke="rgba(255,255,255,0.03)"/>
+            <text x="800" y="204" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">Visualization & Reports</text>
+            <text x="800" y="221" fill="#9aa7c4" font-size="11" text-anchor="middle">Map · Dashboard · PDF / CSV</text>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <footer class="app-footer container" role="contentinfo">
+      <div class="cols">
+        <div style="max-width:520px;">
+          <strong>NEXUS</strong>
+          <p class="muted">AI Road Intelligence platform — detection, analytics and maintenance reporting with a professional UI.</p>
+        </div>
+        <div>
+          <div><strong>Product</strong></div>
+          <div class="muted" style="margin-top:8px;">Dashboard · Map View · Analytics · Reports · System</div>
+        </div>
+        <div>
+          <div><strong>Contact</strong></div>
+          <div class="muted" style="margin-top:8px;">team@nexus.ai · GitHub / Docs</div>
+        </div>
+      </div>
+    </footer>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+  const state = {
+    detections: [],
+    auto: false,
+    mapMarkers: [],
+    map: null,
+    fullMap: null,
+    charts: {},
+    roads: [
+      "MG Road","Brigade Road","Outer Ring Road","Sarjapur Road","Bannerghatta Road",
+      "Whitefield Main Road","Bellary Road","Hosur Road","Indiranagar 100ft Road",
+      "Koramangala 80ft Road","Airport Road","JP Nagar Main Road"
+    ]
+  };
+
+  function rnd(a,b){ return a + Math.random()*(b-a); }
+  function uid(prefix='id'){ return prefix + '_' + Math.random().toString(36).slice(2,9); }
+  function severityFromConfidence(conf){ if(conf >= 0.8) return 'Critical'; if(conf >= 0.6) return 'Warning'; return 'Good'; }
+  function randCoord(){ const baseLat = 12.9716, baseLon = 77.5946; return [ baseLat + (Math.random()-0.5)*0.05, baseLon + (Math.random()-0.5)*0.05 ]; }
+
+  function initMap(){
+    const map = L.map('map', { zoomControl: true, attributionControl: false }).setView([12.9716,77.5946], 12);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
+    state.map = map;
+    const full = L.map('map-full', { zoomControl: true, attributionControl: false }).setView([12.9716,77.5946], 12);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(full);
+    state.fullMap = full;
+  }
+
+  function createMarker(d){
+    const colors = { 'Critical': '#FF3B30', 'Warning': '#FF9500', 'Good': '#34C759' };
+    const el = document.createElement('div');
+    el.style.width='18px'; el.style.height='18px'; el.style.borderRadius='50%'; el.style.boxShadow='0 3px 10px rgba(0,0,0,0.5)'; el.style.background=colors[d.severity] || '#667eea'; el.style.border='2px solid white';
+    const marker = L.marker([d.lat, d.lon], { icon: L.divIcon({ html: el.outerHTML, className: '' }) });
+    const popupHtml = `<div style="font-weight:700;color:#0b1220;">${d.type}</div><div style="color:#39455a;font-size:13px;">${d.road}</div><div style="margin-top:6px;font-size:12px;color:#5b6b7f;">Severity: <strong>${d.severity}</strong><br/>Confidence: <strong>${(d.confidence*100).toFixed(1)}%</strong></div>`;
+    marker.bindPopup(popupHtml);
+    return marker;
+  }
+
+  function addDetection(d){
+    d.id = uid('det');
+    state.detections.unshift(d);
+    updateMetrics();
+    appendToFeed(d);
+    refreshMap();
+    refreshRecentList();
+    updateCharts();
+    addRoadOption(d.road);
+  }
+
+  function appendToFeed(d){
+    const feed = document.getElementById('feed');
+    const el = document.createElement('div');
+    el.className = 'feed-item';
+    el.innerHTML = `<div style="display:flex;gap:10px;align-items:center;"><div><div style="font-weight:700;">${d.type}</div><div class="small-muted">${d.road}</div></div></div><div style="text-align:right;"><div style="font-weight:800;">${(d.confidence*100).toFixed(0)}%</div><div class="small-muted">${d.severity}</div></div>`;
+    feed.prepend(el);
+    const mini = document.getElementById('mini-feed');
+    const miniEl = document.createElement('div');
+    miniEl.style.display='flex'; miniEl.style.justifyContent='space-between'; miniEl.style.alignItems='center'; miniEl.style.gap='8px';
+    const severityClass = d.severity==='Critical' ? 'critical' : (d.severity==='Warning' ? 'warning':'good');
+    miniEl.innerHTML = `<div style="display:flex;align-items:center;gap:8px;"><span class="dot ${severityClass}"></span><strong style="font-size:13px;">${d.type}</strong></div><div class="small-muted">${(d.confidence*100).toFixed(0)}%</div>`;
+    mini.prepend(miniEl);
+    if(feed.children.length>40) feed.removeChild(feed.lastChild);
+    if(mini.children.length>6) mini.removeChild(mini.lastChild);
+  }
+
+  function refreshMap(){
+    state.mapMarkers.forEach(m => { try{ state.map.removeLayer(m); }catch(e){} });
+    state.mapMarkers = [];
+    const showCritical = document.getElementById('filter-critical').checked;
+    const showWarning = document.getElementById('filter-warning').checked;
+    const showGood = document.getElementById('filter-good').checked;
+    state.detections.forEach(d => {
+      const s = d.severity;
+      if((s==='Critical' && !showCritical) || (s==='Warning' && !showWarning) || (s==='Good' && !showGood)) return;
+      const m = createMarker(d);
+      m.addTo(state.map);
+      state.mapMarkers.push(m);
+      createMarker(d).addTo(state.fullMap);
+    });
+  }
+
+  function refreshRecentList(){
+    const el = document.getElementById('recent-list');
+    el.innerHTML = '';
+    state.detections.slice(0,10).forEach(d => {
+      const severityClass = d.severity==='Critical' ? 'critical' : (d.severity==='Warning' ? 'warning':'good');
+      const div = document.createElement('div');
+      div.className = 'feed-item';
+      div.innerHTML = `<div style="display:flex;align-items:center;gap:10px;"><span class="dot ${severityClass}"></span><div><div style="font-weight:700;">${d.road}</div><div class="small-muted">${d.type}</div></div></div><div style="text-align:right;"><div style="font-weight:800;">${(d.confidence*100).toFixed(0)}%</div><div class="small-muted">${d.severity}</div></div>`;
+      el.appendChild(div);
+    });
+    document.getElementById('metric-detections').innerText = state.detections.length;
+  }
+
+  function clearDetections(){
+    state.detections = [];
+    document.getElementById('feed').innerHTML = '';
+    document.getElementById('mini-feed').innerHTML = '';
+    document.getElementById('recent-list').innerHTML = '';
+    state.mapMarkers.forEach(m => { try{ state.map.removeLayer(m); }catch(e){} });
+    state.mapMarkers = [];
+    updateCharts();
+    updateMetrics();
+  }
+
+  function generateSampleDetections(n=5){
+    const types = ["Pothole","Surface Crack","Lane Encroachment","Blocked Sidewalk","Missing Cycle Lane","Road Debris","Illegal Parking","Lane Width Violation"];
+    for(let i=0;i<n;i++){
+      const type = types[Math.floor(Math.random()*types.length)];
+      const conf = Math.random()*0.25 + (type==='Pothole' ? 0.65 : 0.6);
+      const sev = severityFromConfidence(conf);
+      const [lat,lon] = randCoord();
+      const road = state.roads[Math.floor(Math.random()*state.roads.length)];
+      const detection = { road, type, confidence: conf, severity: sev, lat, lon };
+      addDetection(detection);
+    }
+  }
+
+  function toggleAuto(){
+    state.auto = !state.auto;
+    document.getElementById('Status').innerText = state.auto? 'LIVE': 'PAUSED';
+    if(state.auto) autoLoop();
+  }
+  function autoLoop(){ if(!state.auto) return; generateSampleDetections(Math.floor(Math.random()*2)+1); setTimeout(autoLoop, 2500 + Math.random()*3500); }
+
+  function initCharts(){
+    const ctx1 = document.getElementById('chart-severity').getContext('2d');
+    const ctx2 = document.getElementById('chart-types').getContext('2d');
+    const ctxTrend = document.getElementById('chart-trend').getContext('2d');
+    state.charts.severity = new Chart(ctx1, { type:'doughnut', data: { labels:['Critical','Warning','Good'], datasets:[{data:[0,0,1], backgroundColor:['#FF3B30','#FF9500','#34C759']}] }, options: { plugins:{legend:{display:true, labels:{color:'#cbd5e1'}}} } });
+    state.charts.types = new Chart(ctx2, { type:'bar', data:{ labels:['Pothole','Crack','Encroachment','Sidewalk','Debris'], datasets:[{label:'Count', data:[0,0,0,0,0], backgroundColor:'#667eea'}] }, options:{ scales:{ x:{ ticks:{color:'#cbd5e1'} }, y:{ ticks:{color:'#cbd5e1'} } } } });
+    state.charts.trend = new Chart(ctxTrend, { type:'line', data:{ labels:[], datasets:[{ label:'Detections/hour', data:[], fill:true, backgroundColor:'rgba(102,126,234,0.12)', borderColor:'#667eea'}] }, options:{ scales:{ x:{ ticks:{color:'#cbd5e1'} }, y:{ ticks:{color:'#cbd5e1'} } } } });
+    const ctxPoth = document.getElementById('chart-potholes').getContext('2d');
+    state.charts.potholes = new Chart(ctxPoth, { type:'bar', data:{labels:[], datasets:[{data:[], backgroundColor:'#ff6b6b'}]} , options:{} });
+    const ctxComp = document.getElementById('chart-compliance').getContext('2d');
+    state.charts.compliance = new Chart(ctxComp, { type:'doughnut', data:{labels:['Compliant','Non-Compliant'], datasets:[{data:[1,0], backgroundColor:['#34C759','#FF3B30']}] } });
+    const ctxEnc = document.getElementById('chart-encroach').getContext('2d');
+    state.charts.encroach = new Chart(ctxEnc, { type:'line', data:{ labels:[], datasets:[{ label:'Encroachments', data:[], borderColor:'#FF9500', backgroundColor:'rgba(255,149,0,0.08)', fill:true }] } });
+  }
+
+  function updateCharts(){
+    const cnts = {Critical:0, Warning:0, Good:0};
+    const typeMap = {};
+    const trendHours = {};
+    state.detections.forEach(d => { cnts[d.severity] = (cnts[d.severity]||0) + 1; typeMap[d.type] = (typeMap[d.type]||0)+1; const h = new Date().getHours(); trendHours[h] = (trendHours[h]||0) + 1; });
+    if(state.charts.severity){ state.charts.severity.data.datasets[0].data = [cnts.Critical, cnts.Warning, cnts.Good]; state.charts.severity.update(); }
+    const topTypes = Object.entries(typeMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    const labels = topTypes.map(t=>t[0]); const data = topTypes.map(t=>t[1]);
+    if(state.charts.types){ state.charts.types.data.labels = labels.length?labels:['Pothole','Crack','Encroachment','Sidewalk','Debris']; state.charts.types.data.datasets[0].data = data.length?data:[0,0,0,0,0]; state.charts.types.update(); }
+    const trendLabels = Object.keys(trendHours).sort(); const trendData = trendLabels.map(k=>trendHours[k]);
+    if(state.charts.trend){ state.charts.trend.data.labels = trendLabels; state.charts.trend.data.datasets[0].data = trendData; state.charts.trend.update(); }
+    const pothCounts = {}; state.detections.forEach(d=> { if(['Pothole','Surface Crack'].includes(d.type)) { pothCounts[d.road] = (pothCounts[d.road]||0)+1; } });
+    const pLabels = Object.keys(pothCounts).slice(0,8); const pData = pLabels.map(l=>pothCounts[l]);
+    if(state.charts.potholes){ state.charts.potholes.data.labels = pLabels.length?pLabels:['No Data']; state.charts.potholes.data.datasets[0].data = pData.length?pData:[0]; state.charts.potholes.update(); }
+    if(state.charts.compliance){ const nonComp = state.detections.filter(d=>d.type==='Lane Width Violation').length; const comp = Math.max(0, (state.detections.length - nonComp)); state.charts.compliance.data.datasets[0].data = [comp, nonComp]; state.charts.compliance.update(); }
+    const encHours = {}; state.detections.forEach(d => { if(d.type==='Lane Encroachment') { const hr = new Date().getHours(); encHours[hr] = (encHours[hr]||0) + 1; } });
+    const encL = Object.keys(encHours).sort(); const encD = encL.map(k=>encHours[k]);
+    if(state.charts.encroach){ state.charts.encroach.data.labels = encL; state.charts.encroach.data.datasets[0].data = encD; state.charts.encroach.update(); }
+  }
+
+  function addRoadOption(road){ const sel = document.getElementById('report-roads'); if(!Array.from(sel.options).some(o=>o.value===road)) { const opt = document.createElement('option'); opt.value=road; opt.innerText=road; sel.appendChild(opt); } }
+
+  function updateMetrics(){
+    const total = state.detections.length;
+    const critical = state.detections.filter(d=>d.severity==='Critical').length;
+    const avgConf = state.detections.length ? (state.detections.reduce((s,d)=>s+d.confidence,0)/state.detections.length) : 0.95;
+    document.getElementById('metric-detections').innerText = total;
+    document.getElementById('ins-critical').innerText = ((critical/Math.max(1,total))*100).toFixed(1) + '%';
+    document.getElementById('metric-avgconf').innerText = Math.round(avgConf*100) + '%';
+    const roadCounts = {}; state.detections.forEach(d => roadCounts[d.road] = (roadCounts[d.road]||0)+1);
+    const hotspot = Object.entries(roadCounts).sort((a,b)=>b[1]-a[1])[0];
+    document.getElementById('ins-hotspot').innerText = hotspot?hotspot[0]:'N/A';
+  }
+
+  function downloadCSV(){
+    if(!state.detections.length){ alert('No detections'); return; }
+    const headers = ['road','type','severity','confidence','lat','lon'];
+    const rows = state.detections.map(d => [d.road,d.type,d.severity,(d.confidence*100).toFixed(1)+'%',d.lat.toFixed(5),d.lon.toFixed(5)]);
+    let csv = headers.join(',') + '\n' + rows.map(r=>r.map(v=>`"${(""+v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `nexus_detections_${Date.now()}.csv`; document.body.appendChild(a); a.click(); a.remove();
+  }
+
+  function downloadSampleReport(){
+    const sample = makePriorityReport(0.6);
+    const blob = new Blob([sample], { type: 'text/plain;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `nexus_report_${Date.now()}.txt`; document.body.appendChild(a); a.click(); a.remove();
+  }
+
+  function makePriorityReport(threshold){
+    const byRoad = {};
+    state.detections.forEach(d=>{ if(!byRoad[d.road]) byRoad[d.road]=[]; byRoad[d.road].push(d); });
+    const roadScores = Object.entries(byRoad).map(([road,arr])=>{ const score = arr.reduce((s,d)=>s + (d.confidence),0)/arr.length; return { road, count: arr.length, score, issues: [...new Set(arr.map(x=>x.type))] }; }).sort((a,b)=>b.score - a.score);
+    let out = `NEXUS Maintenance Priority Report\nGenerated: ${new Date().toLocaleString()}\n\n`;
+    let high=0, medium=0, low=0;
+    roadScores.forEach(r=>{ const pri = r.score >= threshold ? 'HIGH' : r.score >= (threshold-0.2) ? 'MEDIUM' : 'LOW'; if(pri==='HIGH') high++; else if(pri==='MEDIUM') medium++; else low++; out += `Road: ${r.road}\n  Issues: ${r.issues.join(', ')}\n  Detections: ${r.count}\n  Avg Confidence: ${(r.score*100).toFixed(1)}%\n  Priority: ${pri}\n\n`; });
+    out += `Summary: High=${high}, Medium=${medium}, Low=${low}\n\nSuggested Actions:\n - HIGH: Immediate maintenance scheduling, surface repair, lane marking.\n - MEDIUM: Prioritize in next budget cycle; monitoring for deterioration.\n - LOW: Monitor; plan for periodic maintenance.\n`;
+    return out;
+  }
+
+  function generateReport(){
+    const sel = document.getElementById('report-roads');
+    const chosen = Array.from(sel.selectedOptions).map(o=>o.value);
+    const threshold = parseFloat(document.getElementById('priority-threshold').value);
+    let filtered = state.detections;
+    if(chosen.length) filtered = state.detections.filter(d=>chosen.includes(d.road));
+    const byRoad = {};
+    filtered.forEach(d=>{ if(!byRoad[d.road]) byRoad[d.road]=[]; byRoad[d.road].push(d); });
+    const rows = Object.entries(byRoad).map(([road,arr])=>{ const score = arr.reduce((s,x)=>s+x.confidence,0)/arr.length; return { road, count:arr.length, score, issues:[...new Set(arr.map(x=>x.type))] }; }).sort((a,b)=>b.score-a.score);
+    const out = document.getElementById('report-output');
+    let html = '<div class="card" style="margin-top:12px;"><div style="padding:12px;"><pre style="white-space:pre-wrap;color:#cbd5e1;">';
+    html += makePriorityReport(threshold).replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    html += '</pre></div></div>';
+    out.innerHTML = html;
+  }
+
+  function simulateImageAnnotations(){
+    const img = document.getElementById('annotated-sample');
+    const tmpImg = new Image();
+    tmpImg.crossOrigin = "anonymous";
+    tmpImg.onload = function(){
+      const w = tmpImg.width, h = tmpImg.height;
+      const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(tmpImg,0,0);
+      const boxes = [
+        {x: w*0.12, y: h*0.55, w:w*0.18, h:h*0.12, color:'#FF3B30', label:'Pothole 94%'},
+        {x: w*0.52, y: h*0.30, w:w*0.28, h:h*0.14, color:'#FF9500', label:'Encroachment 78%'},
+        {x: w*0.32, y: h*0.12, w:w*0.20, h:h*0.10, color:'#34C759', label:'Lane Issue 65%'}
+      ];
+      ctx.lineWidth = Math.max(2, Math.round(Math.min(w,h)/200));
+      ctx.font = `${Math.max(12,Math.round(w/70))}px Inter`;
+      boxes.forEach(b=>{
+        ctx.strokeStyle = b.color; ctx.fillStyle = b.color;
+        ctx.strokeRect(b.x,b.y,b.w,b.h);
+        ctx.fillStyle = 'rgba(11,18,32,0.85)';
+        const padding = 6;
+        const tw = ctx.measureText(b.label).width;
+        ctx.fillRect(b.x, b.y - 28, tw + padding*2, 22);
+        ctx.fillStyle = b.color;
+        ctx.fillText(b.label, b.x + padding, b.y - 12);
+      });
+      img.src = canvas.toDataURL();
+    };
+    tmpImg.src = img.src;
+  }
+
+  function navTo(view){
+    document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b=>{ if(b.dataset.view===view) b.classList.add('active'); });
+    document.querySelectorAll('[id^="view-"]').forEach(s=> s.style.display='none');
+    if(view==='dashboard') document.getElementById('view-dashboard').style.display='grid';
+    if(view==='map') document.getElementById('view-map').style.display='block';
+    if(view==='analytics') document.getElementById('view-analytics').style.display='block';
+    if(view==='images') document.getElementById('view-images').style.display='block';
+    if(view==='reports') document.getElementById('view-reports').style.display='block';
+    if(view==='architecture') document.getElementById('view-architecture').style.display='block';
+    updateCharts();
+  }
+
+  function updateHeatOpacity(v){ /* no-op placeholder */ }
+
+  window.addEventListener('load', ()=>{
+    initMap();
+    initCharts();
+    generateSampleDetections(6);
+    navTo('dashboard');
+    const sel = document.getElementById('report-roads');
+    state.roads.forEach(r=>{ const opt = document.createElement('option'); opt.value=r; opt.innerText=r; sel.appendChild(opt); });
+    document.getElementById('annotated-sample').addEventListener('click', simulateImageAnnotations);
+  });
+  </script>
+</body>
+</html>
